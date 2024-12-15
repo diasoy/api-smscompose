@@ -1,7 +1,6 @@
-// filepath: /c:/Users/User/Documents/Project VSCode/api-smscompose/controllers/articlesController.js
-const db = require('../services/db');
+const db = require("../services/db");
 
-const createArticle = (req, res) => {
+const createArticle = async (req, res) => {
   const { title, content, author } = req.body;
 
   if (!title || !content || !author) {
@@ -11,13 +10,11 @@ const createArticle = (req, res) => {
     });
   }
 
-  db.query('INSERT INTO articles (title, content, author) VALUES (?, ?, ?)', [title, content, author], (err, results) => {
-    if (err) {
-      return res.status(500).json({
-        error: true,
-        message: err.message,
-      });
-    }
+  try {
+    const [results] = await db.query(
+      "INSERT INTO articles (title, content, author) VALUES (?, ?, ?)",
+      [title, content, author]
+    );
     res.status(201).json({
       error: false,
       message: "Article created successfully",
@@ -28,75 +25,85 @@ const createArticle = (req, res) => {
         author,
       },
     });
-  });
+  } catch (err) {
+    res.status(500).json({
+      error: true,
+      message: err.message,
+    });
+  }
 };
 
-const getArticles = (req, res) => {
-  db.query('SELECT * FROM articles', (err, results) => {
-    if (err) {
-      return res.status(500).json({
-        error: true,
-        message: err.message,
-      });
-    }
+const getArticles = async (req, res) => {
+  try {
+    const [results] = await db.query("SELECT * FROM articles");
     res.status(200).json({
       error: false,
       message: "Berhasil menampilkan data articles",
       data: results,
     });
-  });
+  } catch (err) {
+    res.status(500).json({
+      error: true,
+      message: err.message,
+    });
+  }
 };
 
-const getArticleById = (req, res) => {
+const getArticleById = async (req, res) => {
   const { id } = req.params;
-  db.query('SELECT * FROM articles WHERE id = ?', [id], (err, results) => {
-    if (err) {
-      return res.status(500).json({
-        error: true,
-        message: err.message,
-      });
-    }
+  try {
+    const [results] = await db.query("SELECT * FROM articles WHERE id = ?", [
+      id,
+    ]);
     res.status(200).json({
       error: false,
       message: "Berhasil menampilkan data article",
       data: results[0],
     });
-  });
+  } catch (err) {
+    res.status(500).json({
+      error: true,
+      message: err.message,
+    });
+  }
 };
 
-const deleteArticle = (req, res) => {
+const deleteArticle = async (req, res) => {
   const { id } = req.params;
 
-  db.query('DELETE FROM articles WHERE id = ?', [id], (err, results) => {
-    if (err) {
-      return res.status(500).json({
-        error: true,
-        message: err.message,
-      });
-    }
+  try {
+    await db.query("DELETE FROM articles WHERE id = ?", [id]);
     res.status(200).json({
       error: false,
       message: "Article deleted successfully",
     });
-  });
+  } catch (err) {
+    res.status(500).json({
+      error: true,
+      message: err.message,
+    });
+  }
 };
 
-const updateArticle = (req, res) => {
+const updateArticle = async (req, res) => {
   const { id } = req.params;
   const { title, content, author } = req.body;
 
-  db.query('UPDATE articles SET title = ?, content = ?, author = ? WHERE id = ?', [title, content, author, id], (err, results) => {
-    if (err) {
-      return res.status(500).json({
-        error: true,
-        message: err.message,
-      });
-    }
+  try {
+    await db.query(
+      "UPDATE articles SET title = ?, content = ?, author = ? WHERE id = ?",
+      [title, content, author, id]
+    );
     res.status(200).json({
       error: false,
       message: "Article updated successfully",
     });
-  });
+  } catch (err) {
+    res.status(500).json({
+      error: true,
+      message: err.message,
+    });
+  }
 };
 
 module.exports = {
