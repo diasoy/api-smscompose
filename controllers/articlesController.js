@@ -1,91 +1,111 @@
-const db = require("../services/db");
-const { v4: uuidv4 } = require("uuid");
+const {
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  deleteDoc,
+  updateDoc,
+} = require("firebase/firestore");
+const db = require("../services/db.js");
 
-exports.createArticle = async (req, res) => {
+const createArticle = async (req, res) => {
   const { title, content, author } = req.body;
-  const id = uuidv4();
 
   if (!title || !content || !author) {
-    return res.status(400).json({ 
-      error: true, 
-      message: "Title, content, and author are required" 
+    return res.status(400).json({
+      error: true,
+      message: "Title, content, and author are required",
     });
   }
 
-  const query = "INSERT INTO articles (id, title, content, author) VALUES (?, ?, ?, ?)";
   try {
-    const [results] = await db.query(query, [id, title, content, author]);
+    const docRef = await addDoc(collection(db, "articles"), {
+      title,
+      content,
+      author,
+    });
     res.status(201).json({
       error: false,
       message: "Article created successfully",
       data: {
-        articleId: id,
-        title: title,
-        content: content,
-        author: author
-      }
+        articleId: docRef.id,
+        title,
+        content,
+        author,
+      },
     });
   } catch (err) {
-    res.status(500).json({ 
-      error: true, 
-      message: err.message 
+    res.status(500).json({
+      error: true,
+      message: err.message,
     });
   }
 };
 
-exports.getArticles = async (req, res) => {
-  const query = "SELECT * FROM articles";
+const getArticles = async (req, res) => {
   try {
-    const [results] = await db.query(query);
+    const querySnapshot = await getDocs(collection(db, "articles"));
+    const articles = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
     res.status(200).json({
       error: false,
       message: "Berhasil menampilkan data articles",
-      data: results,
+      data: articles,
     });
   } catch (err) {
     res.status(500).json({
       error: true,
       message: err.message,
-      data: [],
     });
   }
 };
 
-exports.deleteArticle = async (req, res) => {
+const deleteArticle = async (req, res) => {
   const { id } = req.params;
-  const query = "DELETE FROM articles WHERE id = ?";
+
   try {
-    const [results] = await db.query(query, [id]);
+    const articleRef = doc(db, "articles", id);
+    await deleteDoc(articleRef);
     res.status(200).json({
       error: false,
-      message: "Berhasil menghapus data article",
-      data: results,
+      message: "Article deleted successfully",
     });
   } catch (err) {
     res.status(500).json({
       error: true,
       message: err.message,
-      data: [],
     });
   }
 };
 
-exports.updateArticle = async (req, res) => {
-    const { id } = req.params;
-    const { title, content, author } = req.body;
-    const query = "UPDATE articles SET title = ?, content = ?, author = ? WHERE id = ?";
-    try {
-        const [results] = await db.query(query, [title, content, author, id]);
-        res.status(200).json({
-        error: false,
-        message: "Berhasil mengupdate data article",
-        data: results,
-        });
-    } catch (err) {
-        res.status(500).json({
-        error: true,
-        message: err.message,
-        data: [],
-        });
-    }
-}
+const updateArticle = async (req, res) => {
+  const { id } = req.params;
+  const { title, content, author } = req.body;
+
+  try {
+    const articleRef = doc(db, "articles", id);
+    await updateDoc(articleRef, {
+      title,
+      content,
+      author,
+    });
+    res.status(200).json({
+      error: false,
+      message: "Article updated successfully",
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: true,
+      message: err.message,
+    });
+  }
+};
+
+module.exports = {
+  createArticle,
+  getArticles,
+  deleteArticle,
+  updateArticle,
+};
