@@ -1,14 +1,7 @@
-const {
-  collection,
-  addDoc,
-  getDocs,
-  doc,
-  deleteDoc,
-  updateDoc,
-} = require("firebase/firestore");
-const db = require("../services/db.js");
+// filepath: /c:/Users/User/Documents/Project VSCode/api-smscompose/controllers/articlesController.js
+const db = require('../services/db');
 
-const createArticle = async (req, res) => {
+const createArticle = (req, res) => {
   const { title, content, author } = req.body;
 
   if (!title || !content || !author) {
@@ -18,94 +11,98 @@ const createArticle = async (req, res) => {
     });
   }
 
-  try {
-    const docRef = await addDoc(collection(db, "articles"), {
-      title,
-      content,
-      author,
-    });
+  db.query('INSERT INTO articles (title, content, author) VALUES (?, ?, ?)', [title, content, author], (err, results) => {
+    if (err) {
+      return res.status(500).json({
+        error: true,
+        message: err.message,
+      });
+    }
     res.status(201).json({
       error: false,
       message: "Article created successfully",
       data: {
-        articleId: docRef.id,
+        articleId: results.insertId,
         title,
         content,
         author,
       },
     });
-  } catch (err) {
-    res.status(500).json({
-      error: true,
-      message: err.message,
-    });
-  }
+  });
 };
 
-const getArticles = async (req, res) => {
-  try {
-    const querySnapshot = await getDocs(collection(db, "articles"));
-    const articles = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+const getArticles = (req, res) => {
+  db.query('SELECT * FROM articles', (err, results) => {
+    if (err) {
+      return res.status(500).json({
+        error: true,
+        message: err.message,
+      });
+    }
     res.status(200).json({
       error: false,
       message: "Berhasil menampilkan data articles",
-      data: articles,
+      data: results,
     });
-  } catch (err) {
-    res.status(500).json({
-      error: true,
-      message: err.message,
-    });
-  }
+  });
 };
 
-const deleteArticle = async (req, res) => {
+const getArticleById = (req, res) => {
+  const { id } = req.params;
+  db.query('SELECT * FROM articles WHERE id = ?', [id], (err, results) => {
+    if (err) {
+      return res.status(500).json({
+        error: true,
+        message: err.message,
+      });
+    }
+    res.status(200).json({
+      error: false,
+      message: "Berhasil menampilkan data article",
+      data: results[0],
+    });
+  });
+};
+
+const deleteArticle = (req, res) => {
   const { id } = req.params;
 
-  try {
-    const articleRef = doc(db, "articles", id);
-    await deleteDoc(articleRef);
+  db.query('DELETE FROM articles WHERE id = ?', [id], (err, results) => {
+    if (err) {
+      return res.status(500).json({
+        error: true,
+        message: err.message,
+      });
+    }
     res.status(200).json({
       error: false,
       message: "Article deleted successfully",
     });
-  } catch (err) {
-    res.status(500).json({
-      error: true,
-      message: err.message,
-    });
-  }
+  });
 };
 
-const updateArticle = async (req, res) => {
+const updateArticle = (req, res) => {
   const { id } = req.params;
   const { title, content, author } = req.body;
 
-  try {
-    const articleRef = doc(db, "articles", id);
-    await updateDoc(articleRef, {
-      title,
-      content,
-      author,
-    });
+  db.query('UPDATE articles SET title = ?, content = ?, author = ? WHERE id = ?', [title, content, author, id], (err, results) => {
+    if (err) {
+      return res.status(500).json({
+        error: true,
+        message: err.message,
+      });
+    }
     res.status(200).json({
       error: false,
       message: "Article updated successfully",
     });
-  } catch (err) {
-    res.status(500).json({
-      error: true,
-      message: err.message,
-    });
-  }
+  });
 };
 
 module.exports = {
   createArticle,
   getArticles,
+  getArticleById,
   deleteArticle,
   updateArticle,
 };
